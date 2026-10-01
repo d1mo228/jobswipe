@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  ЦВЕТА ПРИЛОЖЕНИЯ — меняйте здесь.
+  Внутри Telegram переменные --tg-theme-* подмешиваются автоматически
+  (см. src/integrations/telegram/telegram.ts -> applyTelegramTheme).
+*/
+:root {
+  --c-accent: #635bff;
+  --c-accent-text: #ffffff;
+  --c-accent-soft: #eeecff;
+  --c-bg: #f6f7fb;
+  --c-surface: #ffffff;
+  --c-surface-2: #eef0f7;
+  --c-text: #14142b;
+  --c-hint: #6e7191;
+  --c-line: #e4e6f0;
+  --c-good: #16a34a;
+  --c-warn: #d97706;
+  --c-bad: #e5484d;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tg-safe-top: 0px;
+  --tg-safe-bottom: 0px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --c-accent: #7c75ff;
+  --c-accent-text: #ffffff;
+  --c-accent-soft: #26244f;
+  --c-bg: #0f1020;
+  --c-surface: #1a1b30;
+  --c-surface-2: #23243d;
+  --c-text: #f2f2fa;
+  --c-hint: #9b9dc0;
+  --c-line: #2e3050;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px; /* iOS не зумит поля */
+  font-family: inherit;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.pt-safe {
+  padding-top: calc(var(--safe-top) + var(--tg-safe-top));
+}
+.pb-safe {
+  padding-bottom: calc(var(--safe-bottom) + var(--tg-safe-bottom));
+}
+
+.touch-none-x {
+  touch-action: pan-y;
+}
+
+/* Тема Telegram: когда приложение открыто в Telegram и выбрана «системная» тема,
+   берём цвета из --tg-theme-* (подставляются Telegram автоматически). */
+:root[data-tg='1'] {
+  --c-bg: var(--tg-theme-secondary-bg-color, #f6f7fb);
+  --c-surface: var(--tg-theme-bg-color, #ffffff);
+  --c-surface-2: color-mix(in srgb, var(--tg-theme-hint-color, #999999) 14%, var(--tg-theme-bg-color, #ffffff));
+  --c-text: var(--tg-theme-text-color, #14142b);
+  --c-hint: var(--tg-theme-hint-color, #6e7191);
+  --c-line: color-mix(in srgb, var(--tg-theme-hint-color, #999999) 25%, transparent);
+  --c-accent: var(--tg-theme-button-color, #635bff);
+  --c-accent-text: var(--tg-theme-button-text-color, #ffffff);
+  --c-accent-soft: color-mix(in srgb, var(--tg-theme-button-color, #635bff) 14%, var(--tg-theme-bg-color, #ffffff));
+}
