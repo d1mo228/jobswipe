@@ -28,6 +28,7 @@ function TopCard({ children, onDecide, onOpen, register }: TopProps) {
   const rotate = useTransform(x, [-260, 0, 260], [-12, 0, 12])
   const likeOpacity = useTransform(x, [15, 110], [0, 1])
   const passOpacity = useTransform(x, [-110, -15], [1, 0])
+  const busy = useRef(false)
   const dragged = useRef(false)
 
   const fly = async (dir: SwipeDir) => {
