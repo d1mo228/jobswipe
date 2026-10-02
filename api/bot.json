@@ -1,0 +1,28 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(200).send('ok')
+
+  // проверяем, что запрос пришёл именно от Telegram
+  if (req.headers['x-telegram-bot-api-secret-token'] !== process.env.WEBHOOK_SECRET) {
+    return res.status(401).send('unauthorized')
+  }
+
+  const msg = req.body?.message
+  if (msg?.text?.startsWith('/start')) {
+    const name = msg.from?.first_name ?? 'друг'
+    await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: msg.chat.id,
+        text: `Привет, ${name}! 👋\n\nJobSwipe — свайпай вакансии и находи работу или стажировку, которая подходит тебе.`,
+        reply_markup: {
+          inline_keyboard: [[
+            { text: '🚀 Запустить приложение', web_app: { url: process.env.APP_URL } },
+          ]],
+        },
+      }),
+    })
+  }
+
+  res.status(200).send('ok')
+}
