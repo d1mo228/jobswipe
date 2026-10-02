@@ -99,7 +99,7 @@ function SwipeDeckInner<T extends { id: string }>({ items, renderCard, onSwipe, 
 
   if (!top) return null
   return (
-    <div className="relative w-full h-full">
+    <div className="absolute inset-0">
       {third && (
         <div className="absolute inset-0 pointer-events-none" style={{ transform: 'scale(0.9) translateY(26px)', opacity: 0.5 }}>
           {renderCard(third)}
