@@ -57,11 +57,11 @@ function TopCard({ children, onDecide, onOpen, register }: TopProps) {
       style={{ x, rotate, touchAction: 'pan-y' }}
       drag="x"
       dragSnapToOrigin
+      dragElastic={0.85}
+      dragMomentum={false}
       onDragStart={() => { dragged.current = true }}
       onDragEnd={handleEnd}
       onTap={() => { if (!dragged.current && !busy.current) onOpen?.() }}
-      onDragEnd={handleEnd}
-      onTap={() => onOpen?.()}
       whileDrag={{ scale: 1.02 }}
     >
       {children}
