@@ -28,7 +28,7 @@ function TopCard({ children, onDecide, onOpen, register }: TopProps) {
   const rotate = useTransform(x, [-260, 0, 260], [-12, 0, 12])
   const likeOpacity = useTransform(x, [15, 110], [0, 1])
   const passOpacity = useTransform(x, [-110, -15], [1, 0])
-  const busy = useRef(false)
+  const dragged = useRef(false)
 
   const fly = async (dir: SwipeDir) => {
     if (busy.current) return
@@ -43,6 +43,8 @@ function TopCard({ children, onDecide, onOpen, register }: TopProps) {
   }, [])
 
   const handleEnd = (_: PointerEvent, info: PanInfo) => {
+  // не сбрасываем сразу: tap приходит после dragEnd
+  setTimeout(() => { dragged.current = false }, 150)
     if (busy.current) return
     if (info.offset.x > THRESHOLD || info.velocity.x > VELOCITY) fly('like')
     else if (info.offset.x < -THRESHOLD || info.velocity.x < -VELOCITY) fly('pass')
@@ -54,8 +56,9 @@ function TopCard({ children, onDecide, onOpen, register }: TopProps) {
       style={{ x, rotate, touchAction: 'pan-y' }}
       drag="x"
       dragSnapToOrigin
-      dragElastic={0.85}
-      dragMomentum={false}
+      onDragStart={() => { dragged.current = true }}
+      onDragEnd={handleEnd}
+      onTap={() => { if (!dragged.current && !busy.current) onOpen?.() }}
       onDragEnd={handleEnd}
       onTap={() => onOpen?.()}
       whileDrag={{ scale: 1.02 }}
