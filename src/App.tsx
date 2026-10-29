@@ -9,6 +9,10 @@ import { getTelegramStartParam } from './integrations/telegram/telegram'
 import { storage } from './services/storage'
 import ChatPage from './pages/ChatPage'
 import CandidatePage from './pages/CandidatePage'
+import CandidateFiltersPage from './pages/CandidateFiltersPage'
+import PaymentPage from './pages/PaymentPage'
+import PlansPage from './pages/PlansPage'
+import SetupPage from './pages/SetupPage'
 import CompanyPage from './pages/CompanyPage'
 import EditProfilePage from './pages/EditProfilePage'
 import FiltersPage from './pages/FiltersPage'
@@ -23,8 +27,15 @@ import SettingsPage from './pages/SettingsPage'
 import WelcomePage from './pages/WelcomePage'
 
 function Guard({ children }: { children: React.ReactNode }) {
-  const { state } = useApp()
-  return state.onboarded && state.role ? <>{children}</> : <Navigate to="/welcome" replace />
+  const { state, student, employer } = useApp()
+  if (!state.onboarded || !state.role) return <Navigate to="/welcome" replace />
+  // анкета → (для работодателя) выбор тарифа → платформа
+  if (state.role === 'student' && student && !student.setupDone) return <Navigate to="/setup" replace />
+  if (state.role === 'employer' && employer) {
+    if (!employer.setupDone) return <Navigate to="/setup" replace />
+    if (employer.plan === null) return <Navigate to="/plans" replace />
+  }
+  return <>{children}</>
 }
 
 /** Deep link из Telegram: t.me/<bot>?startapp=job_<id> открывает вакансию. */
@@ -50,6 +61,9 @@ function Routed() {
     <Routes>
       <Route path="/welcome" element={<WelcomePage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/setup" element={<SetupPage />} />
+      <Route path="/plans" element={<PlansPage />} />
+      <Route path="/payment" element={<PaymentPage />} />
       <Route
         element={
           <Guard>
@@ -68,6 +82,8 @@ function Routed() {
         <Route path="/candidate/:id" element={<CandidatePage />} />
         <Route path="/new-job" element={<NewJobPage />} />
         <Route path="/filters" element={<FiltersPage />} />
+        <Route path="/candidate-filters" element={<CandidateFiltersPage />} />
+
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to={state.onboarded ? '/home' : '/welcome'} replace />} />

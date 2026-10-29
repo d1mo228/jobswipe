@@ -1,4 +1,4 @@
-import type { Filters, Match, Message, StudentProfile, Company } from '../types'
+import type { CandidateFilters, Filters, Match, Message, StudentProfile, Company } from '../types'
 import { COMPANIES } from './companies'
 import { JOBS } from './jobs'
 
@@ -13,6 +13,17 @@ export const DEFAULT_FILTERS: Filters = {
   experience: 'any',
   employment: '',
   skills: [],
+}
+
+export const DEFAULT_CANDIDATE_FILTERS: CandidateFilters = {
+  city: '',
+  workFormat: '',
+  minExpMonths: 0,
+  direction: '',
+  skills: [],
+  salaryMax: 0,
+  gradYear: 0,
+  minCompat: 0,
 }
 
 /** Demo Student — полностью заполненный профиль студента */

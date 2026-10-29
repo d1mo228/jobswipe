@@ -1,8 +1,12 @@
 import type { Candidate } from '../types'
 
+const DAY = 86_400_000
+const ago = (d: number) => Date.now() - d * DAY - 3_600_000
+
 export const CANDIDATES: Candidate[] = [
   {
     id: 'cand-1',
+    createdAt: ago(2),
     name: 'Мария Орлова',
     university: 'НИУ ВШЭ',
     major: 'Маркетинг и рыночная аналитика',
@@ -21,6 +25,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-2',
+    createdAt: ago(0),
     name: 'Дмитрий Козлов',
     university: 'МГТУ им. Баумана',
     major: 'Прикладная математика',
@@ -39,6 +44,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-3',
+    createdAt: ago(5),
     name: 'Елена Власова',
     university: 'СПбГУ',
     major: 'Реклама и связи с общественностью',
@@ -57,6 +63,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-4',
+    createdAt: ago(1),
     name: 'Артём Никитин',
     university: 'ИТМО',
     major: 'Программная инженерия',
@@ -75,6 +82,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-5',
+    createdAt: ago(9),
     name: 'Софья Белова',
     university: 'РЭУ им. Плеханова',
     major: 'Экономика',
@@ -93,6 +101,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-6',
+    createdAt: ago(3),
     name: 'Иван Тихонов',
     university: 'МИФИ',
     major: 'Информационная безопасность',
@@ -111,6 +120,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-7',
+    createdAt: ago(7),
     name: 'Полина Громова',
     university: 'РАНХиГС',
     major: 'Менеджмент',
@@ -129,6 +139,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-8',
+    createdAt: ago(0),
     name: 'Кирилл Соколов',
     university: 'МГУ',
     major: 'Статистика',
@@ -147,6 +158,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-9',
+    createdAt: ago(14),
     name: 'Алиса Миронова',
     university: 'Британская высшая школа дизайна',
     major: 'Графический дизайн',
@@ -165,6 +177,7 @@ export const CANDIDATES: Candidate[] = [
   },
   {
     id: 'cand-10',
+    createdAt: ago(4),
     name: 'Никита Фролов',
     university: 'РГГУ',
     major: 'Управление персоналом',

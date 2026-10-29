@@ -55,6 +55,8 @@ export interface StudentProfile {
 
 /** Кандидат в ленте работодателя */
 export interface Candidate extends StudentProfile {
+  /** Когда анкета появилась на платформе (для сортировки «по дате») */
+  createdAt: number
   /** Mock: id вакансий, которыми кандидат уже заинтересовался */
   interestedIn: string[]
 }
@@ -94,8 +96,32 @@ export interface CompatItem {
   label: string
   status: CompatStatus
   hint: string
+  /** максимум баллов за критерий (сумма всех = 100) */
+  weight: number
+  /** сколько баллов набрано */
+  points: number
 }
 export interface Compatibility {
   score: number
   items: CompatItem[]
 }
+
+export type Plan = 'free' | 'pro' | 'max'
+
+/** Фильтры работодателя по анкетам кандидатов */
+export interface CandidateFilters {
+  city: string
+  workFormat: '' | WorkFormat
+  /** минимальный опыт кандидата, мес. */
+  minExpMonths: number
+  direction: string
+  skills: string[]
+  /** максимальные зарплатные ожидания кандидата, тыс. ₽ (0 = не важно) */
+  salaryMax: number
+  /** год выпуска (0 = любой) */
+  gradYear: number
+  /** минимальный процент совместимости */
+  minCompat: number
+}
+
+export type CandidateSort = 'compat' | 'date'

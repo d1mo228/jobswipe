@@ -6,6 +6,7 @@ import { CANDIDATES, getCandidate } from '../data/candidates'
 import { COMPANIES, getCompany } from '../data/companies'
 import { JOBS, getJob } from '../data/jobs'
 import type { Candidate, Company, Job } from '../types'
+import { calculateCompatibility } from './matching'
 
 export const mockApi = {
   getAllJobs: (): Job[] => JOBS,
@@ -21,8 +22,12 @@ export const mockApi = {
    * Студент лайкнул вакансию → Match, если работодатель уже лайкнул студента.
    */
   employerLikesStudent: (job: Job): boolean => !!job.employerLikedYou,
-  /** Работодатель лайкнул кандидата → Match, если кандидат уже интересовался вакансией. */
-  studentLikesJob: (candidate: Candidate, jobId: string): boolean => candidate.interestedIn.includes(jobId),
+  /**
+   * Работодатель лайкнул кандидата → Match, если кандидат интересовался вакансией.
+   * Для демо-вакансий это заранее заданный список, для новых вакансий — совместимость от 65%.
+   */
+  studentLikesJob: (candidate: Candidate, job: Job): boolean =>
+    candidate.interestedIn.includes(job.id) || calculateCompatibility(candidate, job).score >= 65,
 
   /** Mock-ответ собеседника в чате */
   getAutoReply(index: number, asEmployer: boolean): string {

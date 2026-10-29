@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { buildDemoEmployerState, buildDemoStudentState, DEFAULT_FILTERS } from '../data/demo'
+import { buildDemoEmployerState, buildDemoStudentState, DEFAULT_CANDIDATE_FILTERS, DEFAULT_FILTERS } from '../data/demo'
 import { JOBS } from '../data/jobs'
 import { getTelegramUser } from '../integrations/telegram/telegram'
 import { mockApi } from '../services/mockApi'
+import { PLANS, todayKey } from '../services/plans'
 import { storage } from '../services/storage'
-import type { Candidate, Company, Filters, Job, Match, Message, Role, StudentProfile, ThemeMode } from '../types'
+import type { Candidate, CandidateFilters, Company, Filters, Job, Match, Message, Plan, Role, StudentProfile, ThemeMode } from '../types'
 
 interface StudentSlice {
   profile: StudentProfile
@@ -13,6 +14,8 @@ interface StudentSlice {
   matches: Match[]
   messages: Record<string, Message[]>
   filters: Filters
+  /** анкета заполнена */
+  setupDone: boolean
 }
 
 interface EmployerSlice {
@@ -23,6 +26,12 @@ interface EmployerSlice {
   passes: string[]
   matches: Match[]
   messages: Record<string, Message[]>
+  setupDone: boolean
+  /** выбранный тариф; null — тариф ещё не выбран */
+  plan: Plan | null
+  /** какие анкеты открыты за текущие сутки (лимит зависит от тарифа) */
+  views: { date: string; ids: string[] }
+  candidateFilters: CandidateFilters
 }
 
 interface AppState {
@@ -41,7 +50,48 @@ const uid = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toSt
 
 function load(): AppState {
   const s = storage.get<AppState>(KEY, INITIAL)
-  return s && s.v === 1 ? s : INITIAL
+  if (!s || s.v !== 1) return INITIAL
+  // миграция данных, сохранённых прежними версиями приложения
+  return {
+    ...s,
+    student: s.student && { ...s.student, setupDone: s.student.setupDone ?? true },
+    employer: s.employer && {
+      ...s.employer,
+      setupDone: s.employer.setupDone ?? true,
+      plan: s.employer.plan === undefined ? 'free' : s.employer.plan,
+      views: s.employer.views ?? { date: todayKey(), ids: [] },
+      candidateFilters: s.employer.candidateFilters ?? DEFAULT_CANDIDATE_FILTERS,
+    },
+  }
+}
+
+const BLANK_PROFILE: StudentProfile = {
+  id: 'student-me',
+  name: '',
+  university: '',
+  major: '',
+  gradYear: new Date().getFullYear() + 1,
+  city: 'Москва',
+  skills: [],
+  desiredTitle: '',
+  direction: 'Маркетинг',
+  salary: 0,
+  workFormat: 'any',
+  experience: '',
+  experienceMonths: 0,
+  portfolio: '',
+  about: '',
+}
+
+const BLANK_COMPANY: Company = {
+  id: 'c-me',
+  name: '',
+  logoColor: '#635bff',
+  description: '',
+  industry: '',
+  size: 10,
+  city: 'Москва',
+  website: '',
 }
 
 interface AppApi {
@@ -52,10 +102,13 @@ interface AppApi {
   /** Match'и и сообщения текущей роли */
   matches: Match[]
   messages: Record<string, Message[]>
-  startAs: (role: Role) => void
+  /** demo=true — заполненный демо-аккаунт, иначе пустой аккаунт + анкета */
+  startAs: (role: Role, demo?: boolean) => void
   switchRole: (role: Role) => void
   resetDemo: () => void
   setTheme: (t: ThemeMode) => void
+  completeStudentSetup: (p: StudentProfile) => void
+  completeEmployerSetup: (company: Company, firstJob: Omit<Job, 'id' | 'companyId'>) => void
   // студент
   swipeJob: (jobId: string, dir: 'like' | 'pass') => Match | null
   updateProfile: (p: StudentProfile) => void
@@ -64,6 +117,12 @@ interface AppApi {
   // работодатель
   swipeCandidate: (jobId: string, candidate: Candidate, dir: 'like' | 'pass') => Match | null
   updateCompany: (c: Company) => void
+  setPlan: (plan: Plan) => void
+  setCandidateFilters: (f: CandidateFilters) => void
+  /** Засчитывает просмотр анкеты. false — дневной лимит тарифа исчерпан. */
+  viewCandidate: (candidateId: string) => boolean
+  /** Сводка по дневному лимиту просмотров */
+  viewInfo: { limit: number | null; used: number; remaining: number | null; ids: string[] }
   addJob: (j: Omit<Job, 'id' | 'companyId'>) => Job
   // чат
   sendMessage: (matchId: string, text: string) => void
@@ -101,8 +160,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
           photoUrl: tg.photo_url,
         }
       : d.profile
-    return { profile, likes: d.likes, passes: d.passes, matches: d.matches, messages: d.messages, filters: DEFAULT_FILTERS }
+    return { profile, likes: d.likes, passes: d.passes, matches: d.matches, messages: d.messages, filters: DEFAULT_FILTERS, setupDone: true }
   }, [])
+
+  const blankStudent = useCallback((): StudentSlice => {
+    const tg = getTelegramUser()
+    const profile = tg
+      ? { ...BLANK_PROFILE, name: [tg.first_name, tg.last_name].filter(Boolean).join(' '), username: tg.username, photoUrl: tg.photo_url }
+      : BLANK_PROFILE
+    return { profile, likes: [], passes: [], matches: [], messages: {}, filters: DEFAULT_FILTERS, setupDone: false }
+  }, [])
+
+  const blankEmployer = useCallback(
+    (): EmployerSlice => ({
+      company: BLANK_COMPANY,
+      jobs: [],
+      likes: [],
+      passes: [],
+      matches: [],
+      messages: {},
+      setupDone: false,
+      plan: null,
+      views: { date: todayKey(), ids: [] },
+      candidateFilters: DEFAULT_CANDIDATE_FILTERS,
+    }),
+    [],
+  )
 
   const buildEmployer = useCallback((): EmployerSlice => {
     const d = buildDemoEmployerState()
@@ -113,19 +196,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
       passes: d.passes,
       matches: d.matches,
       messages: d.messages,
+      setupDone: true,
+      plan: 'free',
+      views: { date: todayKey(), ids: [] },
+      candidateFilters: DEFAULT_CANDIDATE_FILTERS,
     }
   }, [])
 
   const startAs = useCallback(
-    (role: Role) =>
+    (role: Role, demo = false) =>
       commit((s) => ({
         ...s,
         role,
         onboarded: true,
-        student: role === 'student' ? (s.student ?? buildStudent()) : s.student,
-        employer: role === 'employer' ? (s.employer ?? buildEmployer()) : s.employer,
+        student: role === 'student' ? (demo ? buildStudent() : (s.student ?? blankStudent())) : s.student,
+        employer: role === 'employer' ? (demo ? buildEmployer() : (s.employer ?? blankEmployer())) : s.employer,
       })),
-    [commit, buildStudent, buildEmployer],
+    [commit, buildStudent, buildEmployer, blankStudent, blankEmployer],
+  )
+
+  const completeStudentSetup = useCallback(
+    (profile: StudentProfile) => commit((s) => ({ ...s, student: s.student && { ...s.student, profile, setupDone: true } })),
+    [commit],
+  )
+  const completeEmployerSetup = useCallback(
+    (company: Company, firstJob: Omit<Job, 'id' | 'companyId'>) =>
+      commit((s) => {
+        if (!s.employer) return s
+        const job: Job = { ...firstJob, id: uid('j'), companyId: company.id }
+        return { ...s, employer: { ...s.employer, company, jobs: [job, ...s.employer.jobs], setupDone: true } }
+      }),
+    [commit],
+  )
+  const setPlan = useCallback(
+    (plan: Plan) => commit((s) => ({ ...s, employer: s.employer && { ...s.employer, plan } })),
+    [commit],
+  )
+  const setCandidateFilters = useCallback(
+    (candidateFilters: CandidateFilters) => commit((s) => ({ ...s, employer: s.employer && { ...s.employer, candidateFilters } })),
+    [commit],
+  )
+  const viewCandidate = useCallback(
+    (candidateId: string): boolean => {
+      const em = ref.current.employer
+      if (!em) return false
+      const today = todayKey()
+      const ids = em.views.date === today ? em.views.ids : []
+      if (ids.includes(candidateId)) return true
+      const limit = PLANS[em.plan ?? 'free'].dailyLimit
+      if (limit !== null && ids.length >= limit) return false
+      commit((s) => ({ ...s, employer: s.employer && { ...s.employer, views: { date: today, ids: [...ids, candidateId] } } }))
+      return true
+    },
+    [commit],
   )
 
   const resetDemo = useCallback(() => commit((s) => ({ ...INITIAL, theme: s.theme })), [commit])
@@ -209,7 +332,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return null
       }
       let match: Match | null = null
-      if (!em.matches.some((m) => m.jobId === jobId && m.candidateId === candidate.id) && mockApi.studentLikesJob(candidate, jobId)) {
+      const jobObj = em.jobs.find((j) => j.id === jobId)
+      if (jobObj && !em.matches.some((m) => m.jobId === jobId && m.candidateId === candidate.id) && mockApi.studentLikesJob(candidate, jobObj)) {
         match = { id: uid('m'), jobId, companyId: em.company.id, candidateId: candidate.id, createdAt: Date.now(), unread: true }
       }
       commit((s) => {
@@ -273,10 +397,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [commit],
   )
 
-  const switchRole = useCallback((role: Role) => startAs(role), [startAs])
+  const switchRole = useCallback(
+    (role: Role) =>
+      commit((s) => ({
+        ...s,
+        role,
+        onboarded: true,
+        student: role === 'student' ? (s.student ?? buildStudent()) : s.student,
+        employer: role === 'employer' ? (s.employer ?? buildEmployer()) : s.employer,
+      })),
+    [commit, buildStudent, buildEmployer],
+  )
 
   const api = useMemo<AppApi>(() => {
     const slice = state.role === 'employer' ? state.employer : state.student
+    const em = state.employer
+    const limit = PLANS[em?.plan ?? 'free'].dailyLimit
+    const ids = em && em.views.date === todayKey() ? em.views.ids : []
+    const viewInfo = { limit, used: ids.length, remaining: limit === null ? null : Math.max(0, limit - ids.length), ids }
     return {
       state,
       role: state.role,
@@ -285,6 +423,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       matches: slice?.matches ?? [],
       messages: slice?.messages ?? {},
       startAs,
+      completeStudentSetup,
+      completeEmployerSetup,
+      setPlan,
+      setCandidateFilters,
+      viewCandidate,
+      viewInfo,
       switchRole,
       resetDemo,
       setTheme,
@@ -299,7 +443,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       receiveMessage,
       markRead,
     }
-  }, [state, startAs, switchRole, resetDemo, setTheme, swipeJob, updateProfile, setFilters, resetSwipes, swipeCandidate, updateCompany, addJob, sendMessage, receiveMessage, markRead])
+  }, [state, startAs, completeStudentSetup, completeEmployerSetup, setPlan, setCandidateFilters, viewCandidate, switchRole, resetDemo, setTheme, swipeJob, updateProfile, setFilters, resetSwipes, swipeCandidate, updateCompany, addJob, sendMessage, receiveMessage, markRead])
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

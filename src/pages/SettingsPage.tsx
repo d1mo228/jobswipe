@@ -5,11 +5,12 @@ import { Button, InfoRow, PageHeader, Section } from '../components/ui'
 import { useApp } from '../context/AppContext'
 import { detectAppMode, MODE_LABEL } from '../hooks/useAppMode'
 import { useTelegram } from '../integrations/telegram/useTelegram'
+import { formatPrice, PLANS } from '../services/plans'
 import type { ThemeMode } from '../types'
 
 export default function SettingsPage() {
   const nav = useNavigate()
-  const { state, role, setTheme, switchRole, resetDemo } = useApp()
+  const { state, role, employer, setTheme, switchRole, resetDemo } = useApp()
   const { isTelegram, user, isDemoUser } = useTelegram()
   const mode = detectAppMode()
   const other = role === 'student' ? 'employer' : 'student'
@@ -30,6 +31,13 @@ export default function SettingsPage() {
           />
           {isTelegram && <p className="text-xs text-hint mt-2">«Telegram» — цвета берутся из вашей темы Telegram.</p>}
         </Section>
+
+        {role === 'employer' && (
+          <Section title="Тариф" className="space-y-2">
+            <InfoRow label="Текущий тариф" value={`${PLANS[employer?.plan ?? 'free'].name} · ${formatPrice(PLANS[employer?.plan ?? 'free'].price)}/мес`} />
+            <Button full variant="ghost" onClick={() => nav('/plans')}>Сменить тариф</Button>
+          </Section>
+        )}
 
         <Section title="Режим запуска">
           <InfoRow label="Платформа" value={MODE_LABEL[mode]} />

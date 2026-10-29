@@ -7,6 +7,7 @@ import { SwipeDeck, type SwipeDeckHandle, type SwipeDir } from '../components/Sw
 import { Select } from '../components/forms'
 import { Avatar, Button, CompanyLogo, EmptyState } from '../components/ui'
 import { useApp } from '../context/AppContext'
+import EmployerHome from './EmployerHome'
 import { telegramHaptic } from '../integrations/telegram/telegram'
 import { applyJobFilters, calculateCompatibility, countActiveFilters } from '../services/matching'
 import { mockApi } from '../services/mockApi'
@@ -116,91 +117,6 @@ function StudentHome() {
         left={<Avatar name={profile.name} src={profile.photoUrl} size={104} />}
         right={matched ? <CompanyLogo name={matched.company.name} color={matched.company.logoColor} size={104} /> : null}
         text={matched ? `Вы и ${matched.company.name} заинтересованы друг в друге.` : ''}
-        onChat={() => {
-          const id = matched!.match.id
-          setMatched(null)
-          nav(`/chat/${id}`)
-        }}
-        onContinue={() => setMatched(null)}
-      />
-    </div>
-  )
-}
-
-// ───────────────────────── Работодатель ─────────────────────────
-function EmployerHome() {
-  const nav = useNavigate()
-  const { employer, swipeCandidate, resetSwipes } = useApp()
-  const deck = useRef<SwipeDeckHandle>(null)
-  const [jobId, setJobId] = useState(employer!.jobs[0]?.id ?? '')
-  const [matched, setMatched] = useState<{ match: Match; candidate: Candidate } | null>(null)
-
-  const company = employer!.company
-  const job = employer!.jobs.find((j) => j.id === jobId)
-  const seen = useMemo(() => new Set([...employer!.likes, ...employer!.passes]), [employer!.likes, employer!.passes])
-
-  const list = useMemo(() => {
-    if (!job) return []
-    return mockApi
-      .getAllCandidates()
-      .filter((c) => !seen.has(`${job.id}:${c.id}`))
-      .map((c) => ({ c, id: c.id, compat: calculateCompatibility(c, job) }))
-      .sort((a, b) => b.compat.score - a.compat.score)
-  }, [job, seen])
-
-  const onSwipe = (item: { c: Candidate }, dir: SwipeDir) => {
-    if (!job) return
-    telegramHaptic(dir === 'like' ? 'medium' : 'light')
-    const m = swipeCandidate(job.id, item.c, dir)
-    if (m) setMatched({ match: m, candidate: item.c })
-  }
-
-  if (!employer!.jobs.length) {
-    return (
-      <div className="flex flex-col flex-1">
-        <HomeHeader />
-        <EmptyState icon={<RotateCcw size={28} />} title="Нет вакансий" text="Опубликуйте вакансию, чтобы смотреть кандидатов.">
-          <Button onClick={() => nav('/new-job')}>Новая вакансия</Button>
-        </EmptyState>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <HomeHeader />
-      <div className="px-4">
-        <Select value={jobId} onChange={(e) => setJobId(e.target.value)} aria-label="Вакансия">
-          {employer!.jobs.map((j) => (
-            <option key={j.id} value={j.id}>{j.title}</option>
-          ))}
-        </Select>
-      </div>
-
-      {list.length > 0 ? (
-        <>
-          <div className="relative flex-1 min-h-[380px] mx-4 mt-3 mb-9 max-h-[640px]">
-            <SwipeDeck
-              ref={deck}
-              items={list}
-              onSwipe={onSwipe}
-              onOpen={(it) => nav(`/candidate/${it.c.id}?job=${jobId}`)}
-              renderCard={(it) => <CandidateCard c={it.c} compat={it.compat} jobSkills={job?.skills ?? []} />}
-            />
-          </div>
-          <ActionButtons onPass={() => deck.current?.swipe('pass')} onLike={() => deck.current?.swipe('like')} />
-        </>
-      ) : (
-        <EmptyState icon={<RotateCcw size={28} />} title="Кандидаты закончились" text="Вы посмотрели всех кандидатов по этой вакансии.">
-          <Button onClick={resetSwipes}>Начать заново</Button>
-        </EmptyState>
-      )}
-
-      <MatchOverlay
-        open={!!matched}
-        left={<CompanyLogo name={company.name} color={company.logoColor} size={104} />}
-        right={matched ? <Avatar name={matched.candidate.name} src={matched.candidate.photoUrl} size={104} /> : null}
-        text={matched ? `Вы и ${matched.candidate.name} заинтересованы друг в друге.` : ''}
         onChat={() => {
           const id = matched!.match.id
           setMatched(null)

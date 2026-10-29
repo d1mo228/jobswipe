@@ -23,7 +23,7 @@ export function CompatBreakdown({ compat }: { compat: Compatibility }) {
           <li key={it.key} className="flex items-center gap-3 py-2.5">
             <span className="w-7 h-7 rounded-full bg-surface2 flex items-center justify-center">{ICON[it.status]}</span>
             <span className="font-medium text-[15px]">{it.label}</span>
-            <span className="ml-auto text-xs text-hint text-right">{it.hint}</span>
+            <span className="ml-auto text-xs text-hint text-right">{it.hint}<span className="block font-semibold text-ink">{it.points} / {it.weight}</span></span>
           </li>
         ))}
       </ul>

@@ -1,98 +1,83 @@
 import { RELATED_DIRECTIONS } from '../data/jobs'
-import type { Compatibility, CompatItem, CompatStatus, Filters, Job, StudentProfile } from '../types'
-
-const WEIGHTS = { skills: 40, salary: 20, format: 15, direction: 15, experience: 10 }
-const FACTOR: Record<CompatStatus, number> = { ok: 1, partial: 0.5, bad: 0 }
-
-const norm = (s: string) => s.trim().toLowerCase()
+import type {
+  Candidate,
+  CandidateFilters,
+  CandidateSort,
+  Compatibility,
+  CompatItem,
+  CompatStatus,
+  Filters,
+  Job,
+  StudentProfile,
+} from '../types'
 
 /**
- * Mock-алгоритм совместимости профиля и вакансии.
- * Позже эту функцию можно заменить вызовом backend/ML — сигнатура останется той же.
- * Работает в обе стороны: для студента (вакансии) и для работодателя (кандидаты).
+ * ПРОЦЕНТ СОВМЕСТИМОСТИ
+ * ─────────────────────
+ * Сравниваем анкету кандидата с вакансией по 5 критериям. Каждый критерий даёт
+ * коэффициент от 0 до 1, который умножается на вес критерия. Сумма весов = 100,
+ * поэтому итог — это сразу проценты.
+ *
+ *   Навыки         35  — доля требуемых навыков вакансии, которые есть у кандидата
+ *   Направление    20  — то же направление = 1, смежное (напр. Маркетинг ↔ Аналитика) = 0.5, иначе 0
+ *   Зарплата       15  — ожидания ≤ верхней границы вилки = 1; дальше линейно падает до 0 при +30%
+ *   Формат и город 15  — совпал формат и город (или вакансия remote) = 1; частичное совпадение = 0.5
+ *   Опыт           15  — опыт кандидата / требуемый опыт (если опыт не нужен — 1)
+ *
+ * Работает в обе стороны: студент видит совместимость с вакансией, работодатель —
+ * совместимость кандидата с выбранной вакансией. Функцию можно заменить реальным
+ * алгоритмом/ML на backend — сигнатура останется той же.
  */
+export const COMPAT_WEIGHTS = { skills: 35, direction: 20, salary: 15, format: 15, experience: 15 } as const
+
+const norm = (s: string) => s.trim().toLowerCase()
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
+const statusOf = (f: number): CompatStatus => (f >= 0.8 ? 'ok' : f >= 0.4 ? 'partial' : 'bad')
+
 export function calculateCompatibility(
-  profile: Pick<
-    StudentProfile,
-    'skills' | 'salary' | 'workFormat' | 'direction' | 'experienceMonths' | 'city'
-  >,
+  profile: Pick<StudentProfile, 'skills' | 'salary' | 'workFormat' | 'direction' | 'experienceMonths' | 'city'>,
   job: Job,
 ): Compatibility {
   const items: CompatItem[] = []
+  const add = (key: CompatItem['key'], label: string, factor: number, hint: string) => {
+    const weight = COMPAT_WEIGHTS[key]
+    items.push({ key, label, status: statusOf(factor), hint, weight, points: Math.round(weight * clamp01(factor) * 10) / 10 })
+  }
 
-  // Навыки
+  // 1. Навыки
   const have = new Set(profile.skills.map(norm))
   const matched = job.skills.filter((s) => have.has(norm(s)))
-  const ratio = job.skills.length ? matched.length / job.skills.length : 1
-  const skillsStatus: CompatStatus = ratio >= 0.6 ? 'ok' : ratio >= 0.3 ? 'partial' : 'bad'
-  items.push({
-    key: 'skills',
-    label: 'Навыки',
-    status: skillsStatus,
-    hint: `${matched.length} из ${job.skills.length} совпали`,
-  })
+  const skillsF = job.skills.length ? matched.length / job.skills.length : 1
+  add('skills', 'Навыки', skillsF, `${matched.length} из ${job.skills.length} совпали`)
 
-  // Зарплата (тыс. ₽)
-  let salaryStatus: CompatStatus = 'ok'
-  if (profile.salary > job.salaryTo) {
-    salaryStatus = profile.salary <= job.salaryTo * 1.15 ? 'partial' : 'bad'
-  }
-  items.push({
-    key: 'salary',
-    label: 'Зарплата',
-    status: salaryStatus,
-    hint: `ожидание ${profile.salary} · вилка ${job.salaryFrom}–${job.salaryTo} тыс. ₽`,
-  })
+  // 2. Направление
+  const sameDir = norm(profile.direction) === norm(job.direction)
+  const related = (RELATED_DIRECTIONS[profile.direction] ?? []).includes(job.direction)
+  add('direction', 'Направление', sameDir ? 1 : related ? 0.5 : 0, sameDir ? job.direction : related ? `смежное: ${job.direction}` : job.direction)
 
-  // Формат работы + город
-  let formatStatus: CompatStatus
+  // 3. Зарплата (тыс. ₽)
+  const over = profile.salary > job.salaryTo ? (profile.salary - job.salaryTo) / job.salaryTo : 0
+  add('salary', 'Зарплата', 1 - over / 0.3, `ожидание ${profile.salary} · вилка ${job.salaryFrom}–${job.salaryTo} тыс. ₽`)
+
+  // 4. Формат работы + город
   const sameCity = norm(profile.city) === norm(job.city)
-  if (profile.workFormat === 'any') {
-    formatStatus = job.format === 'remote' || sameCity ? 'ok' : 'partial'
-  } else if (profile.workFormat === job.format) {
-    formatStatus = job.format === 'remote' || sameCity ? 'ok' : 'partial'
-  } else if (job.format === 'hybrid' || profile.workFormat === 'hybrid') {
-    formatStatus = job.format === 'remote' || sameCity ? 'partial' : 'bad'
-  } else {
-    formatStatus = 'bad'
-  }
-  items.push({
-    key: 'format',
-    label: 'Формат работы',
-    status: formatStatus,
-    hint: sameCity || job.format === 'remote' ? 'формат подходит' : `вакансия в г. ${job.city}`,
-  })
+  const placeOk = job.format === 'remote' || sameCity
+  let formatF: number
+  if (profile.workFormat === 'any' || profile.workFormat === job.format) formatF = placeOk ? 1 : 0.5
+  else if (profile.workFormat === 'hybrid' || job.format === 'hybrid') formatF = placeOk ? 0.5 : 0.25
+  else formatF = 0
+  add('format', 'Формат и город', formatF, placeOk ? 'формат подходит' : `вакансия в г. ${job.city}`)
 
-  // Направление
-  let directionStatus: CompatStatus = 'bad'
-  if (norm(profile.direction) === norm(job.direction)) directionStatus = 'ok'
-  else if ((RELATED_DIRECTIONS[profile.direction] ?? []).includes(job.direction)) directionStatus = 'partial'
-  items.push({
-    key: 'direction',
-    label: 'Направление',
-    status: directionStatus,
-    hint: job.direction,
-  })
+  // 5. Опыт
+  const expF = job.expMonths === 0 ? 1 : profile.experienceMonths / job.expMonths
+  add('experience', 'Опыт', expF, job.expMonths === 0 ? 'опыт не требуется' : `${profile.experienceMonths} из ${job.expMonths} мес.`)
 
-  // Опыт
-  let expStatus: CompatStatus = 'ok'
-  if (profile.experienceMonths < job.expMonths) {
-    expStatus = profile.experienceMonths >= job.expMonths / 2 ? 'partial' : 'bad'
-  }
-  items.push({
-    key: 'experience',
-    label: 'Опыт',
-    status: expStatus,
-    hint: job.expMonths === 0 ? 'опыт не требуется' : `нужно от ${job.expMonths} мес.`,
-  })
-
-  const score = Math.round(
-    items.reduce((sum, it) => sum + WEIGHTS[it.key] * FACTOR[it.status], 0),
-  )
+  const score = Math.round(items.reduce((sum, it) => sum + it.points, 0))
   return { score, items }
 }
 
-/** Применяет фильтры к списку вакансий */
+// ───────────────────────── Фильтры вакансий (студент) ─────────────────────────
+
 export function applyJobFilters(jobs: Job[], f: Filters): Job[] {
   return jobs.filter((j) => {
     if (f.city && j.city !== f.city && j.format !== 'remote') return false
@@ -112,13 +97,40 @@ export function applyJobFilters(jobs: Job[], f: Filters): Job[] {
 }
 
 export function countActiveFilters(f: Filters): number {
-  let n = 0
-  if (f.city) n++
-  if (f.remoteOnly) n++
-  if (f.salaryMin) n++
-  if (f.direction) n++
-  if (f.experience !== 'any') n++
-  if (f.employment) n++
-  if (f.skills.length) n++
-  return n
+  return [f.city, f.remoteOnly, f.salaryMin, f.direction, f.experience !== 'any', f.employment, f.skills.length].filter(Boolean).length
+}
+
+// ───────────────────────── Список кандидатов (работодатель) ─────────────────────────
+
+export interface CandidateRow {
+  id: string
+  c: Candidate
+  compat: Compatibility
+}
+
+export function applyCandidateFilters(rows: CandidateRow[], f: CandidateFilters): CandidateRow[] {
+  return rows.filter(({ c, compat }) => {
+    if (f.city && c.city !== f.city) return false
+    if (f.workFormat && c.workFormat !== f.workFormat && c.workFormat !== 'any') return false
+    if (f.minExpMonths && c.experienceMonths < f.minExpMonths) return false
+    if (f.direction && c.direction !== f.direction) return false
+    if (f.salaryMax && c.salary > f.salaryMax) return false
+    if (f.gradYear && c.gradYear !== f.gradYear) return false
+    if (f.minCompat && compat.score < f.minCompat) return false
+    if (f.skills.length) {
+      const set = new Set(c.skills.map(norm))
+      if (!f.skills.some((s) => set.has(norm(s)))) return false
+    }
+    return true
+  })
+}
+
+export function sortCandidates(rows: CandidateRow[], sort: CandidateSort): CandidateRow[] {
+  const out = [...rows]
+  out.sort((a, b) => (sort === 'date' ? b.c.createdAt - a.c.createdAt : b.compat.score - a.compat.score || b.c.createdAt - a.c.createdAt))
+  return out
+}
+
+export function countActiveCandidateFilters(f: CandidateFilters): number {
+  return [f.city, f.workFormat, f.minExpMonths, f.direction, f.skills.length, f.salaryMax, f.gradYear, f.minCompat].filter(Boolean).length
 }
