@@ -1,8 +1,10 @@
+import { getCompany } from '../data/companies'
 import { RELATED_DIRECTIONS } from '../data/jobs'
 import type {
   Candidate,
   CandidateFilters,
   CandidateSort,
+  CompanySize,
   Compatibility,
   CompatItem,
   CompatStatus,
@@ -78,10 +80,17 @@ export function calculateCompatibility(
 
 // ───────────────────────── Фильтры вакансий (студент) ─────────────────────────
 
+const sizeOf = (n: number): CompanySize => (n < 50 ? 'small' : n <= 300 ? 'mid' : 'large')
+
 export function applyJobFilters(jobs: Job[], f: Filters): Job[] {
   return jobs.filter((j) => {
+    const company = getCompany(j.companyId)
     if (f.city && j.city !== f.city && j.format !== 'remote') return false
     if (f.remoteOnly && j.format !== 'remote') return false
+    if (f.format && j.format !== f.format) return false
+    if (f.industry && company?.industry !== f.industry) return false
+    if (f.companySize && company && sizeOf(company.size) !== f.companySize) return false
+    if (f.postedWithin && (j.postedAt ?? 0) < Date.now() - f.postedWithin * 86_400_000) return false
     if (f.salaryMin && j.salaryTo < f.salaryMin) return false
     if (f.direction && j.direction !== f.direction) return false
     if (f.employment && j.employment !== f.employment) return false
@@ -97,7 +106,7 @@ export function applyJobFilters(jobs: Job[], f: Filters): Job[] {
 }
 
 export function countActiveFilters(f: Filters): number {
-  return [f.city, f.remoteOnly, f.salaryMin, f.direction, f.experience !== 'any', f.employment, f.skills.length].filter(Boolean).length
+  return [f.city, f.remoteOnly, f.format, f.salaryMin, f.direction, f.experience !== 'any', f.employment, f.skills.length, f.industry, f.companySize, f.minCompat, f.postedWithin].filter(Boolean).length
 }
 
 // ───────────────────────── Список кандидатов (работодатель) ─────────────────────────
@@ -108,29 +117,44 @@ export interface CandidateRow {
   compat: Compatibility
 }
 
-export function applyCandidateFilters(rows: CandidateRow[], f: CandidateFilters): CandidateRow[] {
+export function applyCandidateFilters(rows: CandidateRow[], f: CandidateFilters, viewedIds: string[] = []): CandidateRow[] {
+  const viewed = new Set(viewedIds)
+  const now = Date.now()
   return rows.filter(({ c, compat }) => {
     if (f.city && c.city !== f.city) return false
     if (f.workFormat && c.workFormat !== f.workFormat && c.workFormat !== 'any') return false
     if (f.minExpMonths && c.experienceMonths < f.minExpMonths) return false
+    if (f.maxExpMonths && c.experienceMonths > f.maxExpMonths) return false
     if (f.direction && c.direction !== f.direction) return false
     if (f.salaryMax && c.salary > f.salaryMax) return false
     if (f.gradYear && c.gradYear !== f.gradYear) return false
     if (f.minCompat && compat.score < f.minCompat) return false
+    if (f.university && !norm(c.university).includes(norm(f.university))) return false
+    if (f.hasPortfolio && !c.portfolio) return false
+    if (f.viewed === 'viewed' && !viewed.has(c.id)) return false
+    if (f.viewed === 'new' && viewed.has(c.id)) return false
+    if (f.addedWithin && c.createdAt < now - f.addedWithin * 86_400_000) return false
     if (f.skills.length) {
       const set = new Set(c.skills.map(norm))
-      if (!f.skills.some((s) => set.has(norm(s)))) return false
+      const ok = f.skillsAll ? f.skills.every((s) => set.has(norm(s))) : f.skills.some((s) => set.has(norm(s)))
+      if (!ok) return false
     }
     return true
   })
 }
 
-export function sortCandidates(rows: CandidateRow[], sort: CandidateSort): CandidateRow[] {
+/** compat — по совместимости; new — сначала новые анкеты; viewed — сначала уже просмотренные */
+export function sortCandidates(rows: CandidateRow[], sort: CandidateSort, viewedIds: string[] = []): CandidateRow[] {
+  const viewed = new Set(viewedIds)
   const out = [...rows]
-  out.sort((a, b) => (sort === 'date' ? b.c.createdAt - a.c.createdAt : b.compat.score - a.compat.score || b.c.createdAt - a.c.createdAt))
+  out.sort((a, b) => {
+    if (sort === 'new') return b.c.createdAt - a.c.createdAt
+    if (sort === 'viewed') return Number(viewed.has(b.id)) - Number(viewed.has(a.id)) || b.compat.score - a.compat.score
+    return b.compat.score - a.compat.score || b.c.createdAt - a.c.createdAt
+  })
   return out
 }
 
 export function countActiveCandidateFilters(f: CandidateFilters): number {
-  return [f.city, f.workFormat, f.minExpMonths, f.direction, f.skills.length, f.salaryMax, f.gradYear, f.minCompat].filter(Boolean).length
+  return [f.city, f.workFormat, f.minExpMonths, f.maxExpMonths, f.direction, f.skills.length, f.salaryMax, f.gradYear, f.minCompat, f.university, f.hasPortfolio, f.viewed, f.addedWithin].filter(Boolean).length
 }

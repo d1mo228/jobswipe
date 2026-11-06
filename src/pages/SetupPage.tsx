@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { AvatarPicker } from '../components/AvatarPicker'
 import { ChipPicker, Field, Segmented, Select, TextArea, TextInput } from '../components/forms'
 import { useToast } from '../components/Toast'
 import { Button } from '../components/ui'
@@ -90,6 +91,7 @@ function StudentSetup() {
     <Wizard step={step} total={3} title={titles[step][0]} subtitle={titles[step][1]} onNext={next} onBack={() => setStep(step - 1)} nextLabel={step === 2 ? 'Готово' : 'Далее'}>
       {step === 0 && (
         <>
+          <AvatarPicker name={p.name} value={p.photoUrl} onChange={(photoUrl) => patch({ photoUrl })} />
           <Field label="Имя и фамилия"><TextInput value={p.name} onChange={(e) => patch({ name: e.target.value })} autoComplete="name" /></Field>
           <Field label="Город">
             <Select value={p.city} onChange={(e) => patch({ city: e.target.value })}>{CITIES.map((c) => <option key={c}>{c}</option>)}</Select>
@@ -155,6 +157,7 @@ function EmployerSetup() {
     <Wizard step={step} total={2} title={step === 0 ? 'О компании' : 'Первая вакансия'} subtitle={step === 0 ? 'Так вас увидят кандидаты' : 'Её используем для расчёта совместимости с кандидатами'} onNext={next} onBack={() => setStep(0)} nextLabel={step === 0 ? 'Далее' : 'Выбрать тариф'}>
       {step === 0 ? (
         <>
+          <AvatarPicker label="Логотип компании" name={c.name} logoColor={c.logoColor} value={c.logoUrl} onChange={(logoUrl) => pc({ logoUrl })} />
           <Field label="Название компании"><TextInput value={c.name} onChange={(e) => pc({ name: e.target.value })} /></Field>
           <Field label="Отрасль"><TextInput value={c.industry} onChange={(e) => pc({ industry: e.target.value })} placeholder="IT, ритейл, финтех…" /></Field>
           <Field label="Количество сотрудников"><TextInput type="number" inputMode="numeric" value={c.size || ''} onChange={(e) => pc({ size: Number(e.target.value) })} /></Field>

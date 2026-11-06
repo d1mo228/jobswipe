@@ -8,6 +8,12 @@ const now = () => Date.now()
 export const DEFAULT_FILTERS: Filters = {
   city: '',
   remoteOnly: false,
+  format: '',
+  industry: '',
+  companySize: '',
+  minCompat: 0,
+  postedWithin: 0,
+  sort: 'compat',
   salaryMin: 0,
   direction: '',
   experience: 'any',
@@ -24,6 +30,12 @@ export const DEFAULT_CANDIDATE_FILTERS: CandidateFilters = {
   salaryMax: 0,
   gradYear: 0,
   minCompat: 0,
+  maxExpMonths: 0,
+  skillsAll: false,
+  university: '',
+  hasPortfolio: false,
+  viewed: '',
+  addedWithin: 0,
 }
 
 /** Demo Student — полностью заполненный профиль студента */

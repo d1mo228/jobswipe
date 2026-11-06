@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { AvatarPicker } from '../components/AvatarPicker'
 import { ChipPicker, Field, Segmented, Select, TextArea, TextInput } from '../components/forms'
 import { useToast } from '../components/Toast'
 import { Button, PageHeader, Section } from '../components/ui'
@@ -35,6 +36,7 @@ function EditStudent() {
       <PageHeader title="Редактировать профиль" />
       <div className="px-4 pb-8 space-y-3">
         <Section title="Основное" className="space-y-4">
+          <AvatarPicker name={p.name} value={p.photoUrl} onChange={(photoUrl) => patch({ photoUrl })} />
           <Field label="Имя"><TextInput value={p.name} onChange={(e) => patch({ name: e.target.value })} autoComplete="name" /></Field>
           <Field label="Город">
             <Select value={p.city} onChange={(e) => patch({ city: e.target.value })}>
@@ -109,6 +111,7 @@ function EditCompany() {
       <PageHeader title="Профиль компании" />
       <div className="px-4 pb-8 space-y-3">
         <Section className="space-y-4">
+          <AvatarPicker label="Логотип компании" name={c.name} logoColor={c.logoColor} value={c.logoUrl} onChange={(logoUrl) => patch({ logoUrl })} />
           <Field label="Название"><TextInput value={c.name} onChange={(e) => patch({ name: e.target.value })} /></Field>
           <Field label="Описание"><TextArea value={c.description} onChange={(e) => patch({ description: e.target.value })} /></Field>
           <Field label="Отрасль"><TextInput value={c.industry} onChange={(e) => patch({ industry: e.target.value })} /></Field>

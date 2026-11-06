@@ -75,7 +75,7 @@ export default function CandidatePage() {
       </div>
       <MatchOverlay
         open={!!match}
-        left={<CompanyLogo name={employer.company.name} color={employer.company.logoColor} size={104} />}
+        left={<CompanyLogo src={employer.company.logoUrl} name={employer.company.name} color={employer.company.logoColor} size={104} />}
         right={<Avatar name={cand.name} src={cand.photoUrl} size={104} />}
         text={`Вы и ${cand.name} заинтересованы друг в друге.`}
         onChat={() => match && nav(`/chat/${match.id}`)}

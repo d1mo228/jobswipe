@@ -1,4 +1,4 @@
-import { Pencil, Plus, Settings } from 'lucide-react'
+import { LifeBuoy, Pencil, Plus, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { CompanyView, StudentProfileView } from '../components/ProfileView'
 import { Button, PageHeader } from '../components/ui'
@@ -25,6 +25,7 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-2">
             <Button full onClick={() => nav('/new-job')}><Plus size={18} /> Новая вакансия</Button>
             <Button full variant="ghost" onClick={() => nav('/edit-profile')}><Pencil size={18} /> Редактировать профиль</Button>
+            <Button full variant="ghost" onClick={() => nav('/support')}><LifeBuoy size={18} /> Поддержка</Button>
           </div>
         </div>
       </>
@@ -37,6 +38,7 @@ export default function ProfilePage() {
       <div className="px-4 pb-8 space-y-3">
         <StudentProfileView p={student!.profile} showUsername={isTelegram} />
         <Button full onClick={() => nav('/edit-profile')}><Pencil size={18} /> Редактировать профиль</Button>
+        <Button full variant="ghost" onClick={() => nav('/support')}><LifeBuoy size={18} /> Поддержка</Button>
       </div>
     </>
   )

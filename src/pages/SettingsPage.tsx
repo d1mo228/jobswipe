@@ -39,6 +39,10 @@ export default function SettingsPage() {
           </Section>
         )}
 
+        <Section title="Помощь">
+          <Button full variant="ghost" onClick={() => nav('/support')}>Написать в поддержку</Button>
+        </Section>
+
         <Section title="Режим запуска">
           <InfoRow label="Платформа" value={MODE_LABEL[mode]} />
           <InfoRow

@@ -54,7 +54,7 @@ export default function ChatPage() {
       <PageHeader
         title={
           <button onClick={open} className="flex items-center gap-3 min-w-0 text-left">
-            {employer ? <Avatar name={name} src={cand?.photoUrl} size={36} /> : company && <CompanyLogo name={company.name} color={company.logoColor} size={36} />}
+            {employer ? <Avatar name={name} src={cand?.photoUrl} size={36} /> : company && <CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={36} />}
             <span className="min-w-0">
               <span className="block text-base font-bold leading-tight truncate">{name}</span>
               <span className="block text-xs font-normal text-hint truncate">{job?.title}</span>

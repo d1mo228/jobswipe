@@ -1,4 +1,4 @@
-import { MessageCircle } from 'lucide-react'
+import { LifeBuoy, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, CompanyLogo, EmptyState, PageHeader } from '../components/ui'
 import { useApp } from '../context/AppContext'
@@ -21,6 +21,15 @@ export default function MessagesPage() {
   return (
     <>
       <PageHeader back={false} title="Чаты" />
+      <div className="px-4 pb-2">
+        <button onClick={() => nav('/support')} className="w-full bg-accent-soft rounded-[22px] p-3.5 flex items-center gap-3 text-left active:scale-[0.99] transition">
+          <span className="w-12 h-12 rounded-full btn-primary text-accent-ink flex items-center justify-center shrink-0"><LifeBuoy size={22} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-extrabold">Поддержка JobSwipe</span>
+            <span className="block text-sm text-hint truncate">Вопросы о тарифах, фильтрах, аккаунте</span>
+          </span>
+        </button>
+      </div>
       {rows.length === 0 ? (
         <EmptyState icon={<MessageCircle size={28} />} title="Чатов пока нет" text="Чат откроется после первого Match." />
       ) : (
@@ -33,7 +42,7 @@ export default function MessagesPage() {
             return (
               <li key={m.id}>
                 <button onClick={() => nav(`/chat/${m.id}`)} className="w-full bg-surface rounded-2xl p-3.5 shadow-soft flex items-center gap-3 text-left active:scale-[0.99] transition">
-                  {employer ? <Avatar name={name} src={cand?.photoUrl} size={48} /> : company && <CompanyLogo name={company.name} color={company.logoColor} size={48} />}
+                  {employer ? <Avatar name={name} src={cand?.photoUrl} size={48} /> : company && <CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={48} />}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
                       <span className="font-bold truncate">{name}</span>

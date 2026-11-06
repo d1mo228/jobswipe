@@ -51,7 +51,7 @@ export function CompanyView({ company, jobs, canOpenJobs = true }: { company: Co
   return (
     <div className="space-y-3">
       <Section className="flex flex-col items-center text-center gap-2 py-6">
-        <CompanyLogo name={company.name} color={company.logoColor} size={80} />
+        <CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={80} />
         <h2 className="text-xl font-extrabold">{company.name}</h2>
         <div className="text-hint text-sm">{company.industry} · {companySizeLabel(company.size)}</div>
         <p className="text-sm mt-1 max-w-sm">{company.description}</p>

@@ -27,9 +27,9 @@ export default function OnboardingPage() {
   const Option = ({ role, icon, title, text }: { role: Role; icon: React.ReactNode; title: string; text: string }) => (
     <button
       onClick={() => setPicked(role)}
-      className="w-full text-left bg-surface rounded-3xl p-5 shadow-soft border border-line flex items-center gap-4 active:scale-[0.98] transition hover:border-accent"
+      className="w-full text-left bg-surface rounded-[26px] p-5 shadow-soft border border-line/70 flex items-center gap-4 active:scale-[0.98] transition hover:border-accent rise"
     >
-      <div className="w-14 h-14 rounded-2xl bg-accent-soft text-accent flex items-center justify-center shrink-0">{icon}</div>
+      <div className="w-14 h-14 rounded-2xl btn-primary text-accent-ink flex items-center justify-center shrink-0">{icon}</div>
       <div>
         <div className="font-bold text-lg">{title}</div>
         <div className="text-sm text-hint">{text}</div>
@@ -46,7 +46,7 @@ export default function OnboardingPage() {
             <p className="text-sm text-hint">Привет, {tg.first_name}! Профиль возьмём из Telegram — имя вводить не нужно.</p>
           </div>
         )}
-        <h1 className="text-3xl font-extrabold">{picked ? (picked === 'student' ? 'Я ищу работу' : 'Я ищу сотрудников') : 'Кто вы?'}</h1>
+        <h1 className="text-[32px] leading-tight font-extrabold">{picked ? (picked === 'student' ? 'Я ищу работу' : 'Я ищу сотрудников') : 'Кто вы?'}</h1>
       </div>
 
       {picked ? (

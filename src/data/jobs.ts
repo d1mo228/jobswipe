@@ -322,3 +322,9 @@ export const JOBS: Job[] = [
 ]
 
 export const getJob = (id: string) => JOBS.find((j) => j.id === id)
+
+// Mock: даты публикации (разные дни назад) — для сортировки «сначала новые»
+const DAY = 86_400_000
+JOBS.forEach((j, i) => {
+  j.postedAt ??= Date.now() - ((i * 5) % 19 + 1) * DAY
+})

@@ -13,6 +13,7 @@ import CandidateFiltersPage from './pages/CandidateFiltersPage'
 import PaymentPage from './pages/PaymentPage'
 import PlansPage from './pages/PlansPage'
 import SetupPage from './pages/SetupPage'
+import SupportPage from './pages/SupportPage'
 import CompanyPage from './pages/CompanyPage'
 import EditProfilePage from './pages/EditProfilePage'
 import FiltersPage from './pages/FiltersPage'
@@ -85,6 +86,7 @@ function Routed() {
         <Route path="/candidate-filters" element={<CandidateFiltersPage />} />
 
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/support" element={<SupportPage />} />
       </Route>
       <Route path="*" element={<Navigate to={state.onboarded ? '/home' : '/welcome'} replace />} />
     </Routes>

@@ -12,6 +12,8 @@ export interface Company {
   size: number
   city: string
   website: string
+  /** загруженный логотип (data URL) */
+  logoUrl?: string
 }
 
 export interface Job {
@@ -27,6 +29,8 @@ export interface Job {
   direction: string
   skills: string[]
   description: string
+  /** Когда вакансия опубликована */
+  postedAt?: number
   requirements: string[]
   conditions: string[]
   /** Mock: работодатель уже поставил Like кандидату (студенту) — при Like вакансии будет Match */
@@ -78,14 +82,28 @@ export interface Message {
   ts: number
 }
 
+export type JobSort = 'compat' | 'new' | 'salary'
+export type CompanySize = '' | 'small' | 'mid' | 'large'
+
 export interface Filters {
   city: string
   remoteOnly: boolean
+  /** формат работы; '' — любой */
+  format: '' | WorkFormat
   salaryMin: number
   direction: string
   experience: 'any' | 'none' | 'upto6' | 'upto12'
   employment: '' | Employment
   skills: string[]
+  /** отрасль компании */
+  industry: string
+  /** размер компании: small < 50, mid 50–300, large > 300 */
+  companySize: CompanySize
+  /** минимальная совместимость, % */
+  minCompat: number
+  /** опубликована за последние N дней (0 — любая) */
+  postedWithin: number
+  sort: JobSort
 }
 
 export type ThemeMode = 'system' | 'light' | 'dark'
@@ -122,6 +140,18 @@ export interface CandidateFilters {
   gradYear: number
   /** минимальный процент совместимости */
   minCompat: number
+  /** максимальный опыт, мес. (0 = не важно) */
+  maxExpMonths: number
+  /** все выбранные навыки обязательны (иначе — любой из них) */
+  skillsAll: boolean
+  /** часть названия университета */
+  university: string
+  /** только с портфолио */
+  hasPortfolio: boolean
+  /** просмотренные / ещё не просмотренные */
+  viewed: '' | 'viewed' | 'new'
+  /** анкета добавлена за последние N дней (0 = любая) */
+  addedWithin: number
 }
 
-export type CandidateSort = 'compat' | 'date'
+export type CandidateSort = 'compat' | 'new' | 'viewed'

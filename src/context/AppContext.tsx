@@ -54,13 +54,13 @@ function load(): AppState {
   // миграция данных, сохранённых прежними версиями приложения
   return {
     ...s,
-    student: s.student && { ...s.student, setupDone: s.student.setupDone ?? true },
+    student: s.student && { ...s.student, setupDone: s.student.setupDone ?? true, filters: { ...DEFAULT_FILTERS, ...s.student.filters } },
     employer: s.employer && {
       ...s.employer,
       setupDone: s.employer.setupDone ?? true,
       plan: s.employer.plan === undefined ? 'free' : s.employer.plan,
       views: s.employer.views ?? { date: todayKey(), ids: [] },
-      candidateFilters: s.employer.candidateFilters ?? DEFAULT_CANDIDATE_FILTERS,
+      candidateFilters: { ...DEFAULT_CANDIDATE_FILTERS, ...s.employer.candidateFilters },
     },
   }
 }
@@ -360,7 +360,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addJob = useCallback(
     (j: Omit<Job, 'id' | 'companyId'>): Job => {
-      const job: Job = { ...j, id: uid('j'), companyId: ref.current.employer?.company.id ?? 'c-nova' }
+      const job: Job = { postedAt: Date.now(), ...j, id: uid('j'), companyId: ref.current.employer?.company.id ?? 'c-nova' }
       commit((s) => ({ ...s, employer: s.employer && { ...s.employer, jobs: [job, ...s.employer.jobs] } }))
       return job
     },

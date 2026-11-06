@@ -60,7 +60,7 @@ export default function JobPage() {
       <div className="px-4 pb-8 space-y-3">
         <Section className="space-y-3">
           <button onClick={() => nav(`/company/${company.id}`)} className="flex items-center gap-3 w-full text-left">
-            <CompanyLogo name={company.name} color={company.logoColor} size={48} />
+            <CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={48} />
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{company.name}</div>
               <div className="text-xs text-hint">{company.industry} · {company.size} сотрудников</div>
@@ -111,7 +111,7 @@ export default function JobPage() {
       <MatchOverlay
         open={!!match}
         left={<Avatar name={student?.profile.name ?? ''} src={student?.profile.photoUrl} size={104} />}
-        right={<CompanyLogo name={company.name} color={company.logoColor} size={104} />}
+        right={<CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={104} />}
         text={`Вы и ${company.name} заинтересованы друг в друге.`}
         onChat={() => match && nav(`/chat/${match.id}`)}
         onContinue={() => setMatch(null)}

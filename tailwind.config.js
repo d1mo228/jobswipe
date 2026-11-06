@@ -18,10 +18,12 @@ export default {
         bad: 'var(--c-bad)',
       },
       boxShadow: {
-        card: '0 10px 30px -10px rgba(40, 30, 120, 0.25)',
-        soft: '0 2px 10px rgba(20, 20, 60, 0.06)',
+        card: '0 1px 0 rgba(255,255,255,.6) inset, 0 18px 40px -18px rgba(40, 30, 120, 0.28), 0 2px 6px rgba(20,20,40,.04)',
+        soft: '0 1px 2px rgba(20, 20, 40, 0.04), 0 8px 24px -14px rgba(20, 20, 60, 0.14)',
+        glow: '0 10px 26px -8px color-mix(in srgb, var(--c-accent) 55%, transparent)',
       },
       fontFamily: {
+        display: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
     },

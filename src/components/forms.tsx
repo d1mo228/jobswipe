@@ -53,8 +53,8 @@ export function ChipPicker({
               key={s}
               onClick={() => toggle(s)}
               className={cx(
-                'rounded-full px-3 py-1.5 text-sm font-medium border transition',
-                on ? 'bg-accent text-accent-ink border-accent' : 'bg-surface text-ink border-line hover:bg-surface2',
+                'rounded-full px-3.5 h-9 text-sm font-semibold border transition',
+                on ? 'bg-accent-soft text-accent border-accent/40' : 'bg-surface text-ink/80 border-line hover:bg-surface2',
               )}
             >
               {s}
@@ -116,5 +116,35 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         <span className={cx('block w-6 h-6 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
       </span>
     </button>
+  )
+}
+
+/** Выбор одного значения из нескольких «таблеток» (переносятся на новую строку). */
+export function OptionChips<T extends string | number>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <button
+          type="button"
+          key={String(o.value)}
+          onClick={() => onChange(o.value)}
+          aria-pressed={value === o.value}
+          className={cx(
+            'rounded-full px-3.5 h-9 text-sm font-semibold border transition',
+            value === o.value ? 'bg-ink text-bg border-ink' : 'bg-surface text-ink/80 border-line hover:bg-surface2',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   )
 }

@@ -29,7 +29,7 @@ export default function MatchesPage() {
                   {employer ? (
                     <Avatar name={title} src={cand?.photoUrl} size={52} />
                   ) : (
-                    company && <CompanyLogo name={company.name} color={company.logoColor} size={52} />
+                    company && <CompanyLogo src={company.logoUrl} name={company.name} color={company.logoColor} size={52} />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="font-bold truncate">{title}</div>
